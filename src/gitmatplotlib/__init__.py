@@ -2,15 +2,17 @@
 
 from gitmatplotlib._auto import auto_stamp, disable, enable
 from gitmatplotlib._git import GitInfo, GitNotFoundError, auto_commit, get_git_info
-from gitmatplotlib._stamp import stamp
+from gitmatplotlib._stamp import configure, reset_config, stamp
 
 __all__ = [
     "auto_commit",
     "auto_stamp",
+    "configure",
     "disable",
     "enable",
     "get_git_info",
     "GitInfo",
     "GitNotFoundError",
+    "reset_config",
     "stamp",
 ]
