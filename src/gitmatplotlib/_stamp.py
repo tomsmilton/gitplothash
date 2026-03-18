@@ -6,7 +6,12 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from gitmatplotlib._git import GitInfo, GitNotFoundError, get_git_info
+from gitmatplotlib._git import (
+    GitInfo,
+    GitNotFoundError,
+    auto_commit as _auto_commit,
+    get_git_info,
+)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -20,16 +25,18 @@ def stamp(
     target: Figure | Axes | None = None,
     *,
     fmt: str = "{commit}{dirty}",
-    dirty_marker: str = "*",
+    dirty_marker: str = " (dirty)",
     pos: tuple[float, float] = (0.99, 0.01),
     ha: str = "right",
     va: str = "bottom",
-    fontsize: int = 6,
+    fontsize: int = 10,
     color: str = "gray",
     alpha: float = 0.5,
     fontfamily: str = "monospace",
     repo_path: str | Path | None = None,
     git_info: GitInfo | None = None,
+    auto_commit: bool = False,
+    commit_message: str = "gitmatplotlib: auto-snapshot",
     strict: bool = False,
 ) -> Text | None:
     """Annotate a matplotlib figure with git commit info.
@@ -78,6 +85,10 @@ def stamp(
     else:
         # Assume it's a Figure
         fig = target
+
+    # Auto-commit if requested
+    if auto_commit:
+        _auto_commit(repo_path, message=commit_message)
 
     # Get git info
     if git_info is None:

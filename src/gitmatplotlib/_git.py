@@ -70,6 +70,37 @@ def _parse_repo_name(remote_url: str) -> str:
     return path
 
 
+def auto_commit(
+    repo_path: str | Path | None = None,
+    message: str = "gitmatplotlib: auto-snapshot",
+) -> bool:
+    """Stage all changes and commit if the working tree is dirty.
+
+    Parameters
+    ----------
+    repo_path : str, Path, or None
+        Path within the git repository. Defaults to cwd.
+    message : str
+        Commit message to use.
+
+    Returns
+    -------
+    bool
+        True if a commit was created, False if the tree was already clean.
+    """
+    cwd = Path(repo_path) if repo_path else Path.cwd()
+
+    # Check if there's anything to commit
+    status = _run_git(["status", "--porcelain"], cwd)
+    if status.returncode != 0 or not status.stdout.strip():
+        return False
+
+    # Stage everything and commit
+    _run_git(["add", "-A"], cwd)
+    result = _run_git(["commit", "-m", message], cwd)
+    return result.returncode == 0
+
+
 def get_git_info(repo_path: str | Path | None = None) -> GitInfo:
     """Get git info for the repo containing repo_path.
 

@@ -54,7 +54,14 @@ def enable(ip: Any = None, **stamp_kwargs: Any) -> None:
         _stamp_open_figures(**stamp_kwargs)
 
     _POST_EXECUTE_HOOK = post_execute_hook
+
+    # Register our hook, then move it to the front of the callback list
+    # so it runs BEFORE the matplotlib inline backend closes the figures.
     ip.events.register("post_execute", post_execute_hook)
+    callbacks = ip.events.callbacks.get("post_execute", [])
+    if post_execute_hook in callbacks:
+        callbacks.remove(post_execute_hook)
+        callbacks.insert(0, post_execute_hook)
 
 
 def disable(ip: Any = None) -> None:

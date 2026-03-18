@@ -28,13 +28,13 @@ class TestStamp:
         fig, ax = plt.subplots()
         info = GitInfo(commit="abc1234", dirty=True, branch="main", repo="owner/repo")
         text = stamp(fig, git_info=info)
-        assert text.get_text() == "abc1234*"
+        assert text.get_text() == "abc1234 (dirty)"
 
     def test_stamp_custom_format(self):
         fig, ax = plt.subplots()
         info = GitInfo(commit="abc1234", dirty=True, branch="main", repo="owner/repo")
         text = stamp(fig, git_info=info, fmt="{repo} {branch}@{commit}{dirty}")
-        assert text.get_text() == "owner/repo main@abc1234*"
+        assert text.get_text() == "owner/repo main@abc1234 (dirty)"
 
     def test_stamp_axes_target(self):
         fig, ax = plt.subplots()
