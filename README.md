@@ -31,71 +31,162 @@ plt.show()
 
 This adds a small annotation like `a1b2c3d` (or `a1b2c3d (dirty)` if there are uncommitted changes) in the bottom-right corner of your figure.
 
-## Auto-stamp every plot in a notebook
+## Features
 
-Call `enable()` once in your first cell and all subsequent plots are stamped automatically:
+### `stamp(target, ...)`
+
+Add a git commit annotation to a matplotlib figure. Accepts a `Figure`, `Axes`, or `None` (uses `plt.gcf()`). Returns the `matplotlib.text.Text` artist for further customisation.
 
 ```python
-import gitmatplotlib
-gitmatplotlib.enable()
+gitmatplotlib.stamp()                # stamp current figure
+gitmatplotlib.stamp(fig)             # stamp a specific figure
+gitmatplotlib.stamp(ax)              # stamp the axes' parent figure
 ```
 
-To stop auto-stamping:
+If not inside a git repo, `stamp()` silently does nothing. Pass `strict=True` to raise a `GitNotFoundError` instead.
+
+### `configure(...)` / `reset_config()`
+
+Set default options once at the top of a notebook. All subsequent `stamp()` calls (including via `enable()`) use these defaults. Any argument passed directly to `stamp()` still takes precedence.
 
 ```python
+gitmatplotlib.configure(
+    fmt="{repo} {branch}@{commit}{dirty}",
+    fontsize=8,
+    color="slategray",
+    alpha=0.7,
+    auto_commit=True,
+)
+
+# All subsequent stamps use those defaults
+gitmatplotlib.stamp()
+
+# Override just one option per-call
+gitmatplotlib.stamp(color="red")
+
+# Reset back to built-in defaults
+gitmatplotlib.reset_config()
+```
+
+### `enable(...)` / `disable()`
+
+Auto-stamp every plot in a Jupyter notebook. Call `enable()` once and all subsequent figures are stamped automatically — no explicit `stamp()` call needed. Works with `plt.show()`, `fig.savefig()`, and Jupyter's inline backend.
+
+```python
+gitmatplotlib.enable()
+
+# All plots from here on are auto-stamped
+plt.plot([1, 2, 3])
+plt.show()  # stamped automatically
+
+# Pass options to customise the auto-stamp
+gitmatplotlib.enable(fmt="{repo}@{commit}{dirty}", color="darkgreen")
+
+# Stop auto-stamping
 gitmatplotlib.disable()
 ```
 
-## Auto-commit before stamping
+`enable()` also picks up any defaults set via `configure()`.
 
-Use `auto_commit=True` to automatically commit all changes before stamping. This ensures the commit hash always corresponds to a clean snapshot of the code that produced the plot:
+### `auto_stamp(...)`
+
+Context manager that auto-stamps figures within a `with` block only. Useful when you want auto-stamping for a specific section rather than the whole notebook.
 
 ```python
+with gitmatplotlib.auto_stamp(fontsize=8):
+    plt.plot([1, 2, 3])
+    plt.show()  # stamped
+
+plt.plot([4, 5, 6])
+plt.show()  # NOT stamped — outside the block
+```
+
+### `auto_commit` option
+
+Automatically `git add -A && git commit` before stamping, so the commit hash always points to a clean snapshot of the code that produced the plot. Available on `stamp()`, `configure()`, and `enable()`.
+
+```python
+# Per-call
 gitmatplotlib.stamp(auto_commit=True)
 
-# Or with enable() for all plots
+# As a default for all stamps
+gitmatplotlib.configure(auto_commit=True)
+
+# With auto-stamp
 gitmatplotlib.enable(auto_commit=True)
 ```
 
-## Customisation
+The commit message defaults to `"gitmatplotlib: auto-snapshot"` — customise it with the `commit_message` option. If the tree is already clean, no commit is created.
 
-### Include repo name and branch
+### `auto_commit(repo_path, message)`
 
-```python
-gitmatplotlib.stamp(fmt="{repo} {branch}@{commit}{dirty}")
-# → "tomsmilton/gitplothash main@a1b2c3d"
-```
-
-Format placeholders: `{commit}`, `{dirty}`, `{branch}`, `{repo}`
-
-### Change position and style
+Standalone function to stage and commit all changes programmatically. Returns `True` if a commit was created, `False` if the tree was already clean.
 
 ```python
-gitmatplotlib.stamp(
-    pos=(0.01, 0.99),   # top-left
-    ha="left",
-    va="top",
-    fontsize=8,
-    color="blue",
-    alpha=0.3,
-)
+created = gitmatplotlib.auto_commit()
 ```
 
-### Stamp a specific figure or axes
+### `get_git_info(repo_path)`
+
+Get a `GitInfo` dataclass with details about the current git state:
 
 ```python
-fig, axes = plt.subplots(1, 2)
-gitmatplotlib.stamp(fig)
-gitmatplotlib.stamp(axes[0])  # uses parent figure
+info = gitmatplotlib.get_git_info()
+info.commit   # "a1b2c3d" — short commit hash
+info.dirty    # True/False — uncommitted changes
+info.branch   # "main" — current branch (None if detached HEAD)
+info.repo     # "owner/repo" — parsed from remote URL, or directory name
+
+# Format into a custom label
+info.label(fmt="{repo} {branch}@{commit}{dirty}")
+# → "tomsmilton/gitplothash main@a1b2c3d (dirty)"
 ```
 
-## API
+## Customisation options
+
+All options below are available on `stamp()` and `configure()`:
+
+| Option | Default | Description |
+|---|---|---|
+| `fmt` | `"{commit}{dirty}"` | Format string. Placeholders: `{commit}`, `{dirty}`, `{branch}`, `{repo}` |
+| `dirty_marker` | `" (dirty)"` | What `{dirty}` expands to when the tree is dirty |
+| `pos` | `(0.99, 0.01)` | Position in figure coordinates (0–1). Bottom-right by default |
+| `ha` | `"right"` | Horizontal alignment: `"left"`, `"center"`, `"right"` |
+| `va` | `"bottom"` | Vertical alignment: `"top"`, `"center"`, `"bottom"` |
+| `fontsize` | `10` | Font size in points |
+| `color` | `"gray"` | Text colour |
+| `alpha` | `0.5` | Transparency (0–1) |
+| `fontfamily` | `"monospace"` | Font family |
+| `repo_path` | cwd | Path to the git repository |
+| `auto_commit` | `False` | Stage and commit before stamping |
+| `commit_message` | `"gitmatplotlib: auto-snapshot"` | Commit message for auto-commits |
+| `strict` | `False` | Raise `GitNotFoundError` instead of silently skipping |
+
+### Common position presets
+
+```python
+# Bottom-right (default)
+gitmatplotlib.stamp(pos=(0.99, 0.01), ha="right", va="bottom")
+
+# Top-left
+gitmatplotlib.stamp(pos=(0.01, 0.99), ha="left", va="top")
+
+# Top-right
+gitmatplotlib.stamp(pos=(0.99, 0.99), ha="right", va="top")
+
+# Bottom-left
+gitmatplotlib.stamp(pos=(0.01, 0.01), ha="left", va="bottom")
+```
+
+## API summary
 
 | Function | Description |
 |---|---|
 | `stamp(target, ...)` | Add git info annotation to a figure |
-| `enable(...)` | Auto-stamp all plots in a Jupyter notebook |
+| `configure(...)` | Set default options for all subsequent stamps |
+| `reset_config()` | Reset defaults back to built-in values |
+| `enable(...)` | Auto-stamp all plots (hooks `show`, `savefig`, and IPython) |
 | `disable()` | Stop auto-stamping |
-| `auto_stamp(...)` | Context manager that stamps on `plt.show()` |
-| `get_git_info()` | Get a `GitInfo` object with commit, dirty, branch, repo |
-| `auto_commit()` | Stage and commit all changes if the tree is dirty |
+| `auto_stamp(...)` | Context manager for auto-stamping within a block |
+| `auto_commit(...)` | Stage and commit all changes if the tree is dirty |
+| `get_git_info(...)` | Get a `GitInfo` object with commit, dirty, branch, repo |
