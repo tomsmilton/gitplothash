@@ -31,6 +31,10 @@ plt.show()
 
 This adds a small annotation like `a1b2c3d` (or `a1b2c3d (dirty)` if there are uncommitted changes) in the bottom-right corner of your figure.
 
+| Clean | Dirty |
+|---|---|
+| ![Clean commit](docs/images/basic.png) | ![Dirty commit](docs/images/dirty.png) |
+
 ## Features
 
 ### `stamp(target, ...)`
@@ -44,6 +48,10 @@ gitmatplotlib.stamp(ax)              # stamp the axes' parent figure
 ```
 
 If not inside a git repo, `stamp()` silently does nothing. Pass `strict=True` to raise a `GitNotFoundError` instead.
+
+Works with subplots too — the stamp goes on the figure, not individual axes:
+
+![Subplots](docs/images/subplots.png)
 
 ### `configure(...)` / `reset_config()`
 
@@ -67,6 +75,8 @@ gitmatplotlib.stamp(color="red")
 # Reset back to built-in defaults
 gitmatplotlib.reset_config()
 ```
+
+![configure() comparison](docs/images/configure.png)
 
 ### `enable(...)` / `disable()`
 
@@ -162,6 +172,14 @@ All options below are available on `stamp()` and `configure()`:
 | `commit_message` | `"gitmatplotlib: auto-snapshot"` | Commit message for auto-commits |
 | `strict` | `False` | Raise `GitNotFoundError` instead of silently skipping |
 
+### Format string examples
+
+![Custom format with repo and branch](docs/images/custom_format.png)
+
+### Style comparison
+
+![Default vs custom style](docs/images/styles.png)
+
 ### Common position presets
 
 ```python
@@ -177,6 +195,8 @@ gitmatplotlib.stamp(pos=(0.99, 0.99), ha="right", va="top")
 # Bottom-left
 gitmatplotlib.stamp(pos=(0.01, 0.01), ha="left", va="bottom")
 ```
+
+![Position presets](docs/images/positions.png)
 
 ## API summary
 
