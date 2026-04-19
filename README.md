@@ -1,4 +1,3 @@
-# gitmatplotlib
 
 Stamp your matplotlib plots with the current git commit hash so you can always trace which version of your code produced a figure. Designed for Jupyter notebook workflows where you're iterating on analysis for a paper.
 
